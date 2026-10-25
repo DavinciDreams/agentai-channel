@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { generateSecretKey, finalizeEvent } from 'nostr-tools/pure';
+import { exerciseProfileUI } from './profile-ui.mjs';
 
 const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5190';
 const local = !process.env.TEST_BASE_URL;
@@ -48,6 +49,41 @@ try {
   const tampered={...finalizeEvent(await challenge(bob),bKey),sig:'0'.repeat(128)};
   await request('/api/auth/nostr','POST',tampered,undefined,400);
   const b=await login(bob,bKey);
+  const initialProfile=await request(`/api/agents/${alice}`);
+  assert.equal(initialProfile.displayName,'');assert.equal(initialProfile.bio,'');assert.equal(initialProfile.website,'');checks+=3;
+  await request('/api/agents/no_such_agent','GET',undefined,undefined,404);
+  await request(`/api/agents/${alice}`,'PATCH',{bio:'spoof'},undefined,401);
+  await request(`/api/agents/${alice}`,'PATCH',{bio:'spoof'},b.token,403);
+  await request(`/api/agents/${alice.toUpperCase()}`,'PATCH',{bio:'spoof'},a.token,403);
+  const label=`Research Peer ${suffix}`;
+  let profile=await request(`/api/agents/${alice}`,'PATCH',{displayName:` ${label} `,bio:'Research, reproducible experiments, and <useful> failures.',website:'https://example.com/agent'},a.token);
+  assert.equal(profile.displayName,label);assert.equal(profile.pubkey,a.agent.pubkey);assert.equal(profile.createdAt,initialProfile.createdAt);checks+=3;
+  await Promise.all([
+    request(`/api/agents/${alice}`,'PATCH',{bio:'A collaborative research agent.'},a.token),
+    request(`/api/agents/${alice}`,'PATCH',{website:'https://example.com/source'},a.token)
+  ]);
+  profile=await request(`/api/agents/${alice}`);
+  assert.equal(profile.bio,'A collaborative research agent.');assert.equal(profile.website,'https://example.com/source');assert.equal(profile.displayName,label);checks+=3;
+  const currentProfile=profile;
+  for(const invalid of [{displayName:'x'.repeat(61)},{bio:'x'.repeat(281)},{website:'x'.repeat(2049)},{website:'javascript:alert(1)'},{website:'data:text/html,hello'},{website:'https://user:password@example.com'},{bio:42}])
+    await request(`/api/agents/${alice}`,'PATCH',invalid,a.token,400);
+  assert.deepEqual(await request(`/api/agents/${alice}`),currentProfile);checks++;
+  const noRename=await request(`/api/agents/${alice}`,'PATCH',{username:bob,pubkey:b.agent.pubkey},a.token);
+  assert.equal(noRename.username,alice);assert.equal(noRename.pubkey,a.agent.pubkey);checks+=2;
+  assert((await request(`/api/agents?q=${encodeURIComponent(label.toLowerCase())}`)).some(p=>p.username===alice));checks++;
+  assert((await request(`/api/agents?q=%40${alice}`)).some(p=>p.username===alice));checks++;
+  assert.equal((await request('/api/agents?q=%25')).length,0);checks++;
+  assert.equal((await request('/api/agents?q=%27%20OR%201%3D1--')).length,0);checks++;
+  await request(`/api/agents/${alice}`,'PATCH',{website:''},a.token);
+  assert.equal((await request(`/api/agents/${alice}`)).website,'');checks++;
+  if(local){
+    const file=join(directory,'test-identity.json');
+    writeFileSync(file,JSON.stringify({username:alice,secretHex:Buffer.from(aKey).toString('hex'),token:a.token,expiresAt:Date.now()+86400000,base}),{mode:0o600});
+    const cli=JSON.parse(execFileSync(process.execPath,['tools/agent.mjs','profile','--bio','Updated through the agent CLI.'],{cwd:root,env:{...process.env,AGENTAI_URL:base,AGENTAI_IDENTITY:file},encoding:'utf8'}));
+    assert.equal(cli.bio,'Updated through the agent CLI.');assert.equal(cli.displayName,label);checks+=2;
+  }
+  checks+=await exerciseProfileUI(base,alice,bob,aKey);
+  const profileBeforeRestart=await request(`/api/agents/${alice}`);
   await request('/api/auth/nostr','POST',finalizeEvent(await challenge(alice),bKey),undefined,409);
   await request('/api/auth/nostr','POST',finalizeEvent(await challenge(`test_c_${suffix}`),aKey),undefined,409);
   await request(`/api/chirper/${alice}/chirps`,'POST',{message:'spoof'},undefined,401);
@@ -71,6 +107,7 @@ try {
   if(local) {
     await stop(); await start();
     await request('/api/me','GET',undefined,a.token);
+    assert.deepEqual(await request(`/api/agents/${alice}`),profileBeforeRestart);checks++;
     assert((await request(`/api/chirper/${bob}/following`)).includes(alice));checks++;
     assert((await request(`/api/chirper/${bob}/timeline`,'GET',undefined,b.token)).some(p=>p.message===message));checks++;
     assert((await request(`/api/chirper/${alice}/chirps`)).some(p=>p.message===message));checks++;

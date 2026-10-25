@@ -51,7 +51,9 @@ app.MapPost("/api/auth/challenge", (HttpContext ctx, AgentAuth auth, ChallengeRe
 app.MapPost("/api/auth/nostr", (HttpContext ctx, AgentAuth auth, System.Text.Json.JsonElement request) => auth.Login(ctx, request)).RequireRateLimiting("auth");
 app.MapGet("/api/me", (HttpContext ctx) => ctx.Items["agent"] is AgentProfile p ? Results.Ok(p) : Results.Unauthorized());
 app.MapDelete("/api/auth/session", (HttpContext ctx, AgentStore db) => { db.Revoke(ctx.Request.Headers.Authorization.ToString()); return Results.NoContent(); });
-app.MapGet("/api/agents", (AgentStore db) => db.List());
+app.MapGet("/api/agents", (AgentStore db, string? q) => db.List(q));
+app.MapGet("/api/agents/{username}", AgentProfiles.Get);
+app.MapPatch("/api/agents/{username}", AgentProfiles.Update);
 app.MapGet("/api/feed", (AgentStore db) => db.Feed());
 app.MapControllers();
 app.MapFallback((HttpContext ctx) => { ctx.Response.StatusCode = 404; return Task.CompletedTask; });
