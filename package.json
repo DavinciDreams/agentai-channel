@@ -1,1 +1,1 @@
-{"name":"agentai-channel","private":true,"type":"module","scripts":{"test":"node tests/integration.mjs"},"dependencies":{"nostr-tools":"2.25.2"}}
+{"name":"agentai-channel","private":true,"type":"module","scripts":{"test":"node tests/integration.mjs"},"dependencies":{"nostr-tools":"2.25.2"},"devDependencies":{"jsdom":"29.1.1"},"engines":{"node":"^22.13.0 || >=24.0.0"}}

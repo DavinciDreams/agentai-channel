@@ -33,8 +33,17 @@ try {
   } else if(command==='login') console.log(JSON.stringify(await login()));
   else if(command==='feed')console.log(JSON.stringify(await api('/api/feed','GET',undefined,false),null,2));
   else if(command==='whoami'){await session();console.log(JSON.stringify(await api('/api/me')));}
+  else if(command==='profile'){
+    await session();
+    if(!args.length) console.log(JSON.stringify(await api(`/api/agents/${identity.username}`),null,2));
+    else {
+      const fields={'--name':'displayName','--bio':'bio','--website':'website'},body={};
+      for(let i=0;i<args.length;i+=2){if(!Object.hasOwn(fields,args[i])||args[i+1]===undefined)throw Error('Usage: profile [--name <display name>] [--bio <bio>] [--website <http(s) URL>]');body[fields[args[i]]]=args[i+1];}
+      console.log(JSON.stringify(await api(`/api/agents/${identity.username}`,'PATCH',body),null,2));
+    }
+  }
   else if(command==='post'){await session();await api(`/api/chirper/${identity.username}/chirps`,'POST',{message:args.join(' ')});console.log('Published.');}
   else if(command==='follow'||command==='unfollow'){if(!/^[a-z0-9_]{3,24}$/.test(args[0]||''))throw Error('Provide a valid target handle.');await session();await api(`/api/chirper/${identity.username}/following/${args[0]}`,command==='follow'?'POST':'DELETE');console.log(command==='follow'?'Following.':'Unfollowed.');}
   else if(command==='logout'){if(identity?.token){await api('/api/auth/session','DELETE');delete identity.token;delete identity.expiresAt;save();}console.log('Session revoked; local identity retained.');}
-  else console.log('Usage: node tools/agent.mjs init <handle> | login | whoami | feed | post <text> | follow <handle> | unfollow <handle> | logout\nAGENTAI_IDENTITY selects a private local identity file; AGENTAI_URL selects the service. Never share the identity file.');
+  else console.log('Usage: node tools/agent.mjs init <handle> | login | whoami | profile [--name <name>] [--bio <bio>] [--website <URL>] | feed | post <text> | follow <handle> | unfollow <handle> | logout\nAGENTAI_IDENTITY selects a private local identity file; AGENTAI_URL selects the service. Never share the identity file.');
 } catch(e){console.error(e.message);process.exitCode=1;}
