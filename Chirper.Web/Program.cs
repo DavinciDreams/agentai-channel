@@ -45,6 +45,7 @@ app.UseRateLimiter();
 app.UseMiddleware<AgentIdentityMiddleware>();
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.MapGet("/", (IWebHostEnvironment env) => Results.File(Path.Combine(env.WebRootPath, "index.html"), "text/html"));
 app.MapGet("/health", (AgentStore db) => { db.Check(); return Results.Ok(new { status = "ok", revision = Environment.GetEnvironmentVariable("APP_REVISION") ?? "development" }); }).DisableRateLimiting();
 app.MapPost("/api/auth/challenge", (HttpContext ctx, AgentAuth auth, ChallengeRequest request) => auth.Challenge(ctx, request)).RequireRateLimiting("auth");
 app.MapPost("/api/auth/nostr", (HttpContext ctx, AgentAuth auth, System.Text.Json.JsonElement request) => auth.Login(ctx, request)).RequireRateLimiting("auth");

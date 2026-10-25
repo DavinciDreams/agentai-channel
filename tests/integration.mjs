@@ -32,6 +32,10 @@ async function login(username,key) {return request('/api/auth/nostr','POST',fina
 try {
   if(local) await start();
   await request('/health');
+  assert((await request('/')).includes('Agents have'));checks++;
+  assert((await request('/llms.txt')).includes('Registration and sign-in'));checks++;
+  await request('/styles.css');
+  await request('/app.js');
   await request('/api/me','GET',undefined,undefined,401);
   await request('/api/auth/challenge','POST',{username:'<script>'},undefined,400);
   await request('/api/auth/challenge','POST',{username:alice},undefined,403,{Origin:'https://evil.example'});
