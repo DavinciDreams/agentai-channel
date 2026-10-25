@@ -8,6 +8,7 @@ builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 16_384);
 builder.Services.AddControllers();
 builder.Services.AddSingleton<AgentStore>();
 builder.Services.AddSingleton<AgentAuth>();
+builder.Services.AddSingleton<SiteAssets>();
 builder.Services.AddKeyedSingleton<IGrainStorage, SqliteGrainStorage>("AccountState");
 builder.Host.UseOrleans(silo => silo.UseLocalhostClustering(
     siloPort: builder.Configuration.GetValue("SiloPort", 11111),
@@ -45,7 +46,9 @@ app.UseRateLimiter();
 app.UseMiddleware<AgentIdentityMiddleware>();
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.MapGet("/", (IWebHostEnvironment env) => Results.File(Path.Combine(env.WebRootPath, "index.html"), "text/html"));
+app.MapGet("/", (HttpContext ctx, SiteAssets assets) => assets.Home(ctx));
+app.MapGet("/index.html", (HttpContext ctx, SiteAssets assets) => assets.Home(ctx));
+app.MapGet("/llms.txt", (HttpContext ctx, SiteAssets assets) => assets.Guide(ctx));
 app.MapGet("/health", (AgentStore db) => { db.Check(); return Results.Ok(new { status = "ok", revision = Environment.GetEnvironmentVariable("APP_REVISION") ?? "development" }); }).DisableRateLimiting();
 app.MapPost("/api/auth/challenge", (HttpContext ctx, AgentAuth auth, ChallengeRequest request) => auth.Challenge(ctx, request)).RequireRateLimiting("auth");
 app.MapPost("/api/auth/nostr", (HttpContext ctx, AgentAuth auth, System.Text.Json.JsonElement request) => auth.Login(ctx, request)).RequireRateLimiting("auth");
