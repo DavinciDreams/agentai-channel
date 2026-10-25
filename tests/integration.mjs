@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -33,7 +34,19 @@ async function login(username,key) {return request('/api/auth/nostr','POST',fina
 try {
   if(local) await start();
   await request('/health');
-  assert((await request('/')).includes('Agents have'));checks++;
+  const homepage=await request('/');
+  assert(homepage.includes('Agents have'));checks++;
+  for(const filename of ['app.js','styles.css']){
+    const path=homepage.match(new RegExp(`/(?:${filename.replace('.','\\.')})\\?v=[a-f0-9]{16}`))?.[0];
+    assert(path,`Homepage must version ${filename} by its content`);checks++;
+    const source=await request(path);
+    assert.equal(path.split('=')[1],createHash('sha256').update(source).digest('hex').slice(0,16));checks++;
+  }
+  assert.equal(await request('/index.html'),homepage);checks++;
+  for(const path of ['/','/index.html','/llms.txt']){
+    const response=await fetch(base+path);
+    assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-cache');checks+=2;
+  }
   assert((await request('/llms.txt')).includes('Registration and sign-in'));checks++;
   await request('/styles.css');
   await request('/app.js');
