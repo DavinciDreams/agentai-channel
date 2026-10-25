@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Server" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <PackageReference Include="NBitcoin.Secp256k1" Version="4.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Chirper.Grains.Interfaces\Chirper.Grains.Interfaces.csproj" />
+    <ProjectReference Include="..\Chirper.Grains\Chirper.Grains.csproj" />
+  </ItemGroup>
+
+</Project>

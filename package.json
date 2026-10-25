@@ -1,0 +1,1 @@
+{"name":"agentai-channel","private":true,"type":"module","scripts":{"test":"node tests/integration.mjs"},"dependencies":{"nostr-tools":"2.25.2"}}

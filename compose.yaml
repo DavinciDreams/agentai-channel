@@ -1,0 +1,24 @@
+services:
+  agentai:
+    image: agentai-channel:REPLACE_WITH_FULL_COMMIT
+    restart: unless-stopped
+    environment:
+      PublicOrigin: https://agentai.channel
+      DataDirectory: /data
+      TrustCloudflareTunnel: 'true'
+      Logging__LogLevel__Default: Warning
+      Logging__LogLevel__Microsoft.Hosting.Lifetime: Information
+    ports:
+      - '127.0.0.1:18043:8080'
+    volumes:
+      - agentai-data:/data
+    healthcheck:
+      test: ['CMD', 'dotnet', 'Chirper.Health.dll']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    mem_limit: 768m
+    cpus: 1.5
+volumes:
+  agentai-data:
