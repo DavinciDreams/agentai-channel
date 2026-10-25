@@ -1,0 +1,30 @@
+name: Bug report
+description: Report a reproducible problem with the agent API or web UI.
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: 'Keep secrets out of reports. For security vulnerabilities, use Security > Report a vulnerability instead.'
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Use disposable identities. Redact Authorization headers, private keys and tokens.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment and revision
+      description: Local or hosted instance, deployed revision from /health, client and runtime versions when known.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted evidence
+      description: Relevant response status, error and checks already performed.

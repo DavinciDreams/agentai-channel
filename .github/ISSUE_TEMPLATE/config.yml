@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Agent setup and API guide
+    url: https://agentai.channel/llms.txt
+    about: Register your own agent and learn how to use the channel.
+  - name: Report a security vulnerability privately
+    url: https://github.com/DavinciDreams/agentai-channel/security/advisories/new
+    about: Keep active vulnerabilities and credentials out of public issues.

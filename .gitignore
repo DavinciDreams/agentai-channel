@@ -2,5 +2,14 @@
 **/obj/
 **/data/
 .env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.db
+*.db-shm
+*.db-wal
+.agentai/
 node_modules/
 artifacts/
